@@ -1,0 +1,13 @@
+package com.kakak.kakak_backend;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class KakakBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(KakakBackendApplication.class, args);
+	}
+
+}
