@@ -35,6 +35,7 @@ public class UsersService implements UserDetailsService {
         private final UsersRepo usersrepo;
         private final RoleRepo roleRepo;
         private final OtpLogsRepo otpLogsRepo;
+        private final OtpRedisService otpRedisService;
 
         public Map<String, String> registeruser(AuthUsers user) {
             return usersrepo.findByEmail(user.getEmail())
@@ -88,14 +89,19 @@ public class UsersService implements UserDetailsService {
             String purpose = getRequiredValue(request, "purpose");
             String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
 
+            String otpHash = passwordEncoder.encode(otp);
+            
             AuthOtp_logs otpLog = new AuthOtp_logs();
             otpLog.setPhone(phone);
             otpLog.setPurpose(purpose);
-            otpLog.setOtp_hash(passwordEncoder.encode(otp));
+            otpLog.setOtp_hash(otpHash);
             otpLog.setAttempts(0);
             otpLog.setExpires_at(Timestamp.from(Instant.now().plusSeconds(OTP_EXPIRATION_MINUTES * 60L)));
             otpLog.setVerified(false);
             otpLogsRepo.save(otpLog);
+            
+            // Store OTP in Redis with TTL
+            otpRedisService.storeOtp(phone, purpose, otpHash);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "OTP generated");
@@ -108,8 +114,39 @@ public class UsersService implements UserDetailsService {
             String purpose = getRequiredValue(request, "purpose");
             String otp = getRequiredValue(request, "otp");
 
-            AuthOtp_logs otpLog = otpLogsRepo.findLatestUnverifiedOtp(phone, purpose)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP"));
+            // Check Redis first for faster lookup
+            String cachedOtpHash = otpRedisService.getOtp(phone, purpose);
+            AuthOtp_logs otpLog;
+            
+            if (cachedOtpHash != null) {
+                // Found in Redis - verify immediately
+                if (!passwordEncoder.matches(otp, cachedOtpHash)) {
+                    // Update attempts in database
+                    otpLogsRepo.findLatestUnverifiedOtp(phone, purpose).ifPresent(log -> {
+                        log.setAttempts(log.getAttempts() + 1);
+                        otpLogsRepo.save(log);
+                    });
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
+                }
+                
+                // OTP is valid, fetch from database to update status
+                otpLog = otpLogsRepo.findLatestUnverifiedOtp(phone, purpose)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP"));
+            } else {
+                // Not in Redis, fetch from database
+                otpLog = otpLogsRepo.findLatestUnverifiedOtp(phone, purpose)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP"));
+                
+                if (otpLog.getExpires_at().before(Timestamp.from(Instant.now()))) {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP expired");
+                }
+                
+                if (!passwordEncoder.matches(otp, otpLog.getOtp_hash())) {
+                    otpLog.setAttempts(otpLog.getAttempts() + 1);
+                    otpLogsRepo.save(otpLog);
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
+                }
+            }
 
             if (otpLog.getExpires_at().before(Timestamp.from(Instant.now()))) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP expired");
@@ -119,14 +156,13 @@ public class UsersService implements UserDetailsService {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Maximum OTP attempts exceeded");
             }
 
-            otpLog.setAttempts(otpLog.getAttempts() + 1);
-            if (!passwordEncoder.matches(otp, otpLog.getOtp_hash())) {
-                otpLogsRepo.save(otpLog);
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
-            }
-
+            // Mark as verified in database
             otpLog.setVerified(true);
             otpLogsRepo.save(otpLog);
+            
+            // Delete from Redis
+            otpRedisService.deleteOtp(phone, purpose);
+            
             usersrepo.findByPhone(phone).ifPresent(user -> {
                 user.setPhone_verified(true);
                 usersrepo.save(user);
