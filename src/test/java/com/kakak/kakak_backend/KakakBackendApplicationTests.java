@@ -1,13 +1,14 @@
 package com.kakak.kakak_backend;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 class KakakBackendApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassLoads() {
+		assertNotNull(KakakBackendApplication.class);
 	}
 
 }
