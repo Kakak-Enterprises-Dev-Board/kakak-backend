@@ -14,29 +14,50 @@ import java.util.function.Function;
 
 @Component
 public class JwtUtil {
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     @Value("${app.jwt.secret}")
     private String secretKey;
 
     @Value("${app.jwt.expiration-ms}")
-    private String jwtExpiration;
+    private long jwtExpiration;
+
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpiration;
 
     public String GenerateToken(String email) {
+        return generateToken(email, ACCESS_TOKEN_TYPE, jwtExpiration);
+    }
+
+    public String GenerateRefreshToken(String email) {
+        return generateToken(email, REFRESH_TOKEN_TYPE, refreshExpiration);
+    }
+
+    private String generateToken(String email, String tokenType, long expirationMs) {
         return Jwts
                 .builder()
                 .setSubject(email)
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .setIssuedAt(new Date())
                 .setExpiration(
-                        new Date(System.currentTimeMillis()+ jwtExpiration)
+                        new Date(System.currentTimeMillis() + expirationMs)
                 )
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
     public String extractEmail(String Token) {
         return  extractClaim(Token,Claims::getSubject);
     }
+
     public Date extractExpiration(String Token){
         return extractClaim(Token,Claims::getExpiration);
+    }
+
+    public String extractTokenType(String Token) {
+        return extractClaim(Token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
     }
 
     public <T> T extractClaim(String Token, Function<Claims, T> claimsResolver) {
@@ -54,6 +75,15 @@ public class JwtUtil {
         String extractedEmail = extractEmail(token);
         return extractedEmail.equals(email) && !isTokenExpired(token);
     }
+
+    public boolean isAccessTokenValid(String token, String email) {
+        return isTokenValid(token, email) && ACCESS_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
+    public boolean isRefreshTokenValid(String token, String email) {
+        return isTokenValid(token, email) && REFRESH_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
@@ -62,4 +92,4 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    }
+}
