@@ -1,14 +1,13 @@
 package com.kakak.kakak_backend.authentication.authController;
+import com.kakak.kakak_backend.authentication.authDTO.*;
 import org.springframework.security.core.Authentication;
-import com.kakak.kakak_backend.authentication.authDTO.LoginRequest;
-import com.kakak.kakak_backend.authentication.authDTO.TokenResponse;
-import com.kakak.kakak_backend.authentication.authDTO.UserProfileResponse;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import com.kakak.kakak_backend.authentication.authService.UsersService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,9 +39,12 @@ public class authController {
     }
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(
-            @RequestBody LoginRequest request) {
+            @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
-        return ResponseEntity.ok(userservice.login(request));
+        return ResponseEntity.ok(
+                userservice.login(request, httpRequest)
+        );
     }
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> me(
@@ -61,6 +63,22 @@ public class authController {
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAll() {
         return ResponseEntity.ok().build();
+    }
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionResponse>> sessions(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                userservice.getSessions(authentication.getName())
+        );
+    }
+    @GetMapping("/trusted-devices")
+    public ResponseEntity<List<TrustedDeviceResponse>> trustedDevices(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                userservice.getTrustedDevices(authentication.getName())
+        );
     }
 
 }

@@ -1,16 +1,9 @@
 package com.kakak.kakak_backend.authentication.authService;
 
 import com.kakak.kakak_backend.Config.JwtUtil;
-import com.kakak.kakak_backend.authentication.authDTO.LoginRequest;
-import com.kakak.kakak_backend.authentication.authDTO.LoginUserResponse;
-import com.kakak.kakak_backend.authentication.authDTO.TokenResponse;
-import com.kakak.kakak_backend.authentication.authDTO.UserProfileResponse;
-import com.kakak.kakak_backend.authentication.authEntity.AuthRole;
-import com.kakak.kakak_backend.authentication.authEntity.AuthOtp_logs;
-import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
-import com.kakak.kakak_backend.authentication.authRepository.OtpLogsRepo;
-import com.kakak.kakak_backend.authentication.authRepository.RoleRepo;
-import com.kakak.kakak_backend.authentication.authRepository.UsersRepo;
+import com.kakak.kakak_backend.authentication.authDTO.*;
+import com.kakak.kakak_backend.authentication.authEntity.*;
+import com.kakak.kakak_backend.authentication.authRepository.*;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +18,7 @@ import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -40,7 +34,8 @@ public class UsersService implements UserDetailsService {
         private final RoleRepo roleRepo;
         private final OtpLogsRepo otpLogsRepo;
         private final OtpRedisService otpRedisService;
-
+        private final SessionRepo sessionRepo;
+        private final TrustedDeviceRepo trustedDeviceRepo;
         public Map<String, String> registeruser(AuthUsers user) {
             return usersrepo.findByEmail(user.getEmail())
                     .map(existingUser -> tokensForExistingUser(existingUser, user.getPassword_hash()))
@@ -191,7 +186,9 @@ public class UsersService implements UserDetailsService {
             response.put("refreshToken", jwtUtil.GenerateRefreshToken(email));
             return response;
         }
-    public TokenResponse login(LoginRequest request) {
+    public TokenResponse login(
+            LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
         AuthUsers user = usersrepo.findByPhone(request.getPhone())
                 .orElseThrow(() ->
@@ -212,6 +209,55 @@ public class UsersService implements UserDetailsService {
                 new java.sql.Timestamp(System.currentTimeMillis()));
 
         usersrepo.save(user);
+        String refreshToken =
+                jwtUtil.GenerateRefreshToken(user.getEmail());
+
+        String ipAddress =
+                httpRequest.getRemoteAddr();
+
+        String userAgent =
+                httpRequest.getHeader("User-Agent");
+
+        AuthSession session = new AuthSession();
+
+        session.setUser(user);
+        session.setRefresh_token(refreshToken);
+
+        session.setDevice_name("Postman");
+        session.setDevice_os("Windows");
+
+        session.setIp_address(ipAddress);
+        session.setUser_agent(userAgent);
+
+        session.setExpires_at(
+                new java.sql.Timestamp(
+                        System.currentTimeMillis()
+                                + (7L * 24 * 60 * 60 * 1000)
+                )
+        );
+
+        session.setRevoked(false);
+
+        sessionRepo.save(session);
+
+        TrustedDevice device =
+                new TrustedDevice();
+
+        device.setUser(user);
+
+        device.setDevice_fingerprint(
+                user.getId() + "-" + ipAddress
+        );
+
+        device.setDevice_name("Postman");
+
+        device.setLast_used_at(
+                new java.sql.Timestamp(
+                        System.currentTimeMillis()
+                )
+        );
+
+        trustedDeviceRepo.save(device);
 
         LoginUserResponse userResponse =
                 new LoginUserResponse(
@@ -229,7 +275,7 @@ public class UsersService implements UserDetailsService {
 
         return new TokenResponse(
                 jwtUtil.GenerateToken(user.getEmail()),
-                jwtUtil.GenerateRefreshToken(user.getEmail()),
+                refreshToken,
                 9000L,
                 userResponse
         );
@@ -255,7 +301,43 @@ public class UsersService implements UserDetailsService {
                 user.getCreated_at()
         );
     }
+    public List<SessionResponse> getSessions(String email) {
 
+        AuthUsers user = usersrepo.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found"));
+
+        return sessionRepo.findByUser(user)
+                .stream()
+                .map(session -> new SessionResponse(
+                        session.getId(),
+                        session.getDevice_name(),
+                        session.getDevice_os(),
+                        session.getIp_address(),
+                        session.getUser_agent(),
+                        session.getExpires_at(),
+                        session.isRevoked(),
+                        session.getCreated_at()
+                ))
+                .toList();
+    }
+    public List<TrustedDeviceResponse> getTrustedDevices(String email) {
+
+        AuthUsers user = usersrepo.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found"));
+
+        return trustedDeviceRepo.findByUser(user)
+                .stream()
+                .map(device -> new TrustedDeviceResponse(
+                        device.getId(),
+                        device.getDevice_fingerprint(),
+                        device.getDevice_name(),
+                        device.getLast_used_at(),
+                        device.getCreated_at()
+                ))
+                .toList();
+    }
         @Override
         public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
             return usersrepo.findByEmail(email)
