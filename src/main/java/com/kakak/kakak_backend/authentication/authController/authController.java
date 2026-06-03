@@ -80,5 +80,32 @@ public class authController {
                 userservice.getTrustedDevices(authentication.getName())
         );
     }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        userservice.forgotPassword(request);
+
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestBody ResetPasswordRequest request) {
+
+        userservice.resetPassword(request);
+
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        userservice.changePassword(
+                authentication.getName(),
+                request);
+
+        return ResponseEntity.ok().build();
+    }
 
 }

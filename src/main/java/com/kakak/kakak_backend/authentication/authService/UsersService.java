@@ -87,7 +87,6 @@ public class UsersService implements UserDetailsService {
             String phone = getRequiredValue(request, "phone");
             String purpose = getRequiredValue(request, "purpose");
             String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
-
             String otpHash = passwordEncoder.encode(otp);
             
             AuthOtp_logs otpLog = new AuthOtp_logs();
@@ -337,6 +336,67 @@ public class UsersService implements UserDetailsService {
                         device.getCreated_at()
                 ))
                 .toList();
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        usersrepo.findByPhone(request.getPhone())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"));
+
+        Map<String, String> otpRequest = new HashMap<>();
+        otpRequest.put("phone", request.getPhone());
+        otpRequest.put("purpose", "RESET_PASSWORD");
+
+        sendOtp(otpRequest);
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+
+        AuthUsers user = usersrepo.findByPhone(request.getPhone())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Invalid password reset request"));
+
+        Map<String, String> otpRequest = new HashMap<>();
+        otpRequest.put("phone", request.getPhone());
+        otpRequest.put("purpose", "RESET_PASSWORD");
+        otpRequest.put("otp", request.getOtp());
+
+        verifyOtp(otpRequest);
+
+        user.setPassword_hash(
+                passwordEncoder.encode(request.getNewPassword()));
+
+        usersrepo.save(user);
+    }
+
+    public void changePassword(
+            String email,
+            ChangePasswordRequest request) {
+
+        AuthUsers user = usersrepo.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found"));
+
+        if (!passwordEncoder.matches(
+                request.getCurrentPassword(),
+                user.getPassword())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid current password");
+        }
+
+        user.setPassword_hash(
+                passwordEncoder.encode(
+                        request.getNewPassword()));
+
+        usersrepo.save(user);
     }
         @Override
         public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
