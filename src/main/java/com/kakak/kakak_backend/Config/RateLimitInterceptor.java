@@ -25,7 +25,6 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         String uri = request.getRequestURI();
         String method = request.getMethod();
-        String clientIp = getClientIp(request);
 
         // Only apply rate limiting to POST requests on auth endpoints
         if (!method.equals("POST") || !uri.startsWith("/api/v1/auth/")) {
@@ -35,21 +34,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         boolean allowed = true;
 
         if (uri.contains("/send-otp")) {
-            allowed = rateLimitService.isAllowed(clientIp, "send-otp", SEND_OTP_LIMIT, 1);
-        } else if (uri.contains("/verify-otp")) {
-            allowed = rateLimitService.isAllowed(clientIp, "verify-otp", VERIFY_OTP_LIMIT, 1);
-        } else if (uri.contains("/register")) {
-            allowed = rateLimitService.isAllowed(clientIp, "register", REGISTER_LIMIT, 1);
-        } else if (uri.contains("/refresh")) {
-            allowed = rateLimitService.isAllowed(clientIp, "refresh", REFRESH_LIMIT, 1);
+            return true;
         }
 
-        if (!allowed) {
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Rate limit exceeded. Please try again later.\"}");
-            return false;
-        }
+        // Rate limiting for other endpoints is now handled in service methods (per-user basis)
+        // This interceptor is kept for potential additional checks
 
         return true;
     }
