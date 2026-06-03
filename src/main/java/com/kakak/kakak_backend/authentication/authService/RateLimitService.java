@@ -39,6 +39,19 @@ public class RateLimitService {
     }
 
     /**
+     * Check rate limit for email (useful for user registration and token refresh)
+     * @param email Email address
+     * @param endpoint Endpoint identifier
+     * @param limit Maximum attempts
+     * @param windowMinutes Time window in minutes
+     * @return true if attempt allowed, false if limit exceeded
+     */
+    public boolean isEmailAllowed(String email, String endpoint, int limit, int windowMinutes) {
+        String key = "ratelimit:email:" + email + ":" + endpoint;
+        return checkAndIncrement(key, limit, windowMinutes);
+    }
+
+    /**
      * Check rate limit for phone number (useful for OTP verification)
      * @param phone Phone number
      * @param purpose Purpose/endpoint identifier
@@ -49,6 +62,33 @@ public class RateLimitService {
     public boolean isPhoneAllowed(String phone, String purpose, int limit, int windowMinutes) {
         String key = "ratelimit:phone:" + phone + ":" + purpose;
         return checkAndIncrement(key, limit, windowMinutes);
+    }
+
+    /**
+     * Get remaining attempts for email-based rate limit
+     * @param email Email address
+     * @param endpoint Endpoint identifier
+     * @param limit Maximum limit for this endpoint
+     * @return remaining attempts
+     */
+    public long getRemainingEmailAttempts(String email, String endpoint, int limit) {
+        String key = "ratelimit:email:" + email + ":" + endpoint;
+        String current = redisTemplate.opsForValue().get(key);
+        if (current == null) {
+            return limit;
+        }
+        long count = Long.parseLong(current);
+        return Math.max(0, limit - count);
+    }
+
+    /**
+     * Reset rate limit for an email
+     * @param email Email address
+     * @param endpoint Endpoint identifier
+     */
+    public void resetEmail(String email, String endpoint) {
+        String key = "ratelimit:email:" + email + ":" + endpoint;
+        redisTemplate.delete(key);
     }
 
     /**
