@@ -26,6 +26,9 @@ import java.util.Map;
 public class UsersService implements UserDetailsService {
         private static final int OTP_EXPIRATION_MINUTES = 5;
         private static final int MAX_OTP_ATTEMPTS = 5;
+        private static final int REFRESH_LIMIT = 10; // 10 refreshes per minute per user
+        private static final int REGISTER_LIMIT = 5; // 5 registrations per minute per email
+        private static final int VERIFY_OTP_LIMIT = 5; // 5 OTP verifications per minute per phone
         private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
         private final JwtUtil jwtUtil;
@@ -34,11 +37,29 @@ public class UsersService implements UserDetailsService {
         private final RoleRepo roleRepo;
         private final OtpLogsRepo otpLogsRepo;
         private final OtpRedisService otpRedisService;
+        private final RateLimitService rateLimitService;
+
         private final SessionRepo sessionRepo;
         private final TrustedDeviceRepo trustedDeviceRepo;
         public Map<String, String> registeruser(AuthUsers user) {
+            if (user.getUsername() == null || user.getUsername().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
+            }
+            
+            // Apply per-user rate limit for registration
+            String email = user.getEmail();
+            if (!rateLimitService.isEmailAllowed(email, "register", REGISTER_LIMIT, 1)) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Registration rate limit exceeded for this email. Please try again later.");
+            }
+            
             return usersrepo.findByEmail(user.getEmail())
-                    .map(existingUser -> tokensForExistingUser(existingUser, user.getPassword_hash()))
+                    .map(existingUser -> {
+                        // Username cannot be changed - it remains the same as registered
+                        if (!existingUser.getUsername().equals(user.getUsername())) {
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be changed. Use your original registered username.");
+                        }
+                        return tokensForExistingUser(existingUser, user.getPassword_hash());
+                    })
                     .orElseGet(() -> registerNewUser(user));
         }
 
@@ -72,6 +93,11 @@ public class UsersService implements UserDetailsService {
                     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
                 }
 
+                // Apply per-user rate limit for token refresh
+                if (!rateLimitService.isEmailAllowed(email, "refresh", REFRESH_LIMIT, 1)) {
+                    throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Token refresh rate limit exceeded. Please try again later.");
+                }
+
                 usersrepo.findByEmail(email)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
 
@@ -89,6 +115,26 @@ public class UsersService implements UserDetailsService {
             String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
             String otpHash = passwordEncoder.encode(otp);
             
+            // Check if OTP already exists in Redis - if yes, return the same OTP
+            String existingPlainOtp = otpRedisService.getPlainOtp(phone, purpose);
+            
+            String otp;
+            String otpHash;
+            
+            if (existingPlainOtp != null) {
+                // OTP already exists, return the same one (within rate limit window)
+                otp = existingPlainOtp;
+                otpHash = otpRedisService.getHashedOtp(phone, purpose);
+            } else {
+                // Generate new OTP (first request or rate limit window expired)
+                otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+                otpHash = passwordEncoder.encode(otp);
+                
+                // Store both plain and hashed OTP in Redis
+                otpRedisService.storeOtp(phone, purpose, otp, otpHash);
+            }
+            
+            // Log the OTP in database (create new log entry or update if needed)
             AuthOtp_logs otpLog = new AuthOtp_logs();
             otpLog.setPhone(phone);
             otpLog.setPurpose(purpose);
@@ -97,9 +143,6 @@ public class UsersService implements UserDetailsService {
             otpLog.setExpires_at(Timestamp.from(Instant.now().plusSeconds(OTP_EXPIRATION_MINUTES * 60L)));
             otpLog.setVerified(false);
             otpLogsRepo.save(otpLog);
-            
-            // Store OTP in Redis with TTL
-            otpRedisService.storeOtp(phone, purpose, otpHash);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "OTP generated");
@@ -112,8 +155,13 @@ public class UsersService implements UserDetailsService {
             String purpose = getRequiredValue(request, "purpose");
             String otp = getRequiredValue(request, "otp");
 
+            // Apply per-user (per-phone) rate limit for OTP verification
+            if (!rateLimitService.isPhoneAllowed(phone, "verify-otp", VERIFY_OTP_LIMIT, 1)) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "OTP verification rate limit exceeded. Please try again later.");
+            }
+
             // Check Redis first for faster lookup
-            String cachedOtpHash = otpRedisService.getOtp(phone, purpose);
+            String cachedOtpHash = otpRedisService.getHashedOtp(phone, purpose);
             AuthOtp_logs otpLog;
             
             if (cachedOtpHash != null) {
