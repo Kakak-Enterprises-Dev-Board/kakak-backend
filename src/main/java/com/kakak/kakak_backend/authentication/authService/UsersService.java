@@ -1,6 +1,9 @@
 package com.kakak.kakak_backend.authentication.authService;
 
 import com.kakak.kakak_backend.Config.JwtUtil;
+import com.kakak.kakak_backend.authentication.authDTO.LoginRequest;
+import com.kakak.kakak_backend.authentication.authDTO.LoginUserResponse;
+import com.kakak.kakak_backend.authentication.authDTO.TokenResponse;
 import com.kakak.kakak_backend.authentication.authEntity.AuthRole;
 import com.kakak.kakak_backend.authentication.authEntity.AuthOtp_logs;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
@@ -187,6 +190,49 @@ public class UsersService implements UserDetailsService {
             response.put("refreshToken", jwtUtil.GenerateRefreshToken(email));
             return response;
         }
+    public TokenResponse login(LoginRequest request) {
+
+        AuthUsers user = usersrepo.findByPhone(request.getPhone())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.UNAUTHORIZED,
+                                "Invalid credentials"));
+
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid credentials");
+        }
+
+        user.setLast_login_at(
+                new java.sql.Timestamp(System.currentTimeMillis()));
+
+        usersrepo.save(user);
+
+        LoginUserResponse userResponse =
+                new LoginUserResponse(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getPhone(),
+                        user.getEmail(),
+                        user.getRole_id().getName(),
+                        user.getStatus(),
+                        user.isPhone_verified(),
+                        user.isEmail_verified(),
+                        user.getCreated_at()
+                );
+
+        return new TokenResponse(
+                jwtUtil.GenerateToken(user.getEmail()),
+                jwtUtil.GenerateRefreshToken(user.getEmail()),
+                9000L,
+                userResponse
+        );
+    }
 
         @Override
         public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {

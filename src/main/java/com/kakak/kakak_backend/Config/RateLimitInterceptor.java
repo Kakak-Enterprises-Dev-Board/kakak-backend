@@ -32,7 +32,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        boolean allowed = false;
+        boolean allowed = true;
 
         if (uri.contains("/send-otp")) {
             allowed = rateLimitService.isAllowed(clientIp, "send-otp", SEND_OTP_LIMIT, 1);
