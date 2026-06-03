@@ -2,13 +2,13 @@ package com.kakak.kakak_backend.authentication.authDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class TokenResponse {
+
     private String accessToken;
     private String refreshToken;
-    private String message;
+    private Long expiresIn;
+    private LoginUserResponse user;
 }

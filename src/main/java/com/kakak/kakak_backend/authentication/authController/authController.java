@@ -1,5 +1,13 @@
 package com.kakak.kakak_backend.authentication.authController;
+import com.kakak.kakak_backend.authentication.authDTO.*;
+import org.springframework.security.core.Authentication;
+import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
+import com.kakak.kakak_backend.authentication.authService.UsersService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import com.kakak.kakak_backend.authentication.authService.UsersService;
 import lombok.RequiredArgsConstructor;
@@ -11,29 +19,99 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class authController {
 
     private final UsersService userservice;
 
     @PostMapping("/register")
     public ResponseEntity<Map<String,String>> register(@RequestBody AuthUsers register ) {
-            return ResponseEntity.ok(userservice.registeruser(register));
+        return ResponseEntity.ok(userservice.registeruser(register));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<Map<String,String>> refresh(@RequestBody Map<String, String> request) {
-            String refreshToken = request == null ? null : request.get("refreshToken");
-            return ResponseEntity.ok(userservice.refreshAccessToken(refreshToken));
+        String refreshToken = request == null ? null : request.get("refreshToken");
+        return ResponseEntity.ok(userservice.refreshAccessToken(refreshToken));
     }
 
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, String>> sendOtp(@RequestBody Map<String, String> request) {
-            return ResponseEntity.ok(userservice.sendOtp(request));
+        return ResponseEntity.ok(userservice.sendOtp(request));
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody Map<String, String> request) {
-            return ResponseEntity.ok(userservice.verifyOtp(request));
+        return ResponseEntity.ok(userservice.verifyOtp(request));
+    }
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(
+            @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+
+        return ResponseEntity.ok(
+                userservice.login(request, httpRequest)
+        );
+    }
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> me(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return ResponseEntity.ok(
+                userservice.getCurrentUser(email)
+        );
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll() {
+        return ResponseEntity.ok().build();
+    }
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionResponse>> sessions(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                userservice.getSessions(authentication.getName())
+        );
+    }
+    @GetMapping("/trusted-devices")
+    public ResponseEntity<List<TrustedDeviceResponse>> trustedDevices(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                userservice.getTrustedDevices(authentication.getName())
+        );
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        userservice.forgotPassword(request);
+
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestBody ResetPasswordRequest request) {
+
+        userservice.resetPassword(request);
+
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        userservice.changePassword(
+                authentication.getName(),
+                request);
+
+        return ResponseEntity.ok().build();
     }
 
 }
