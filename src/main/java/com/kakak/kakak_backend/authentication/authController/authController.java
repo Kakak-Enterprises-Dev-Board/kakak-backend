@@ -1,7 +1,8 @@
 package com.kakak.kakak_backend.authentication.authController;
-
+import org.springframework.security.core.Authentication;
 import com.kakak.kakak_backend.authentication.authDTO.LoginRequest;
 import com.kakak.kakak_backend.authentication.authDTO.TokenResponse;
+import com.kakak.kakak_backend.authentication.authDTO.UserProfileResponse;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import com.kakak.kakak_backend.authentication.authService.UsersService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,24 @@ public class authController {
             @RequestBody LoginRequest request) {
 
         return ResponseEntity.ok(userservice.login(request));
+    }
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> me(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return ResponseEntity.ok(
+                userservice.getCurrentUser(email)
+        );
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll() {
+        return ResponseEntity.ok().build();
     }
 
 }

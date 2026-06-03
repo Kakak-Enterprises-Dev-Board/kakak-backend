@@ -4,6 +4,7 @@ import com.kakak.kakak_backend.Config.JwtUtil;
 import com.kakak.kakak_backend.authentication.authDTO.LoginRequest;
 import com.kakak.kakak_backend.authentication.authDTO.LoginUserResponse;
 import com.kakak.kakak_backend.authentication.authDTO.TokenResponse;
+import com.kakak.kakak_backend.authentication.authDTO.UserProfileResponse;
 import com.kakak.kakak_backend.authentication.authEntity.AuthRole;
 import com.kakak.kakak_backend.authentication.authEntity.AuthOtp_logs;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
@@ -231,6 +232,27 @@ public class UsersService implements UserDetailsService {
                 jwtUtil.GenerateRefreshToken(user.getEmail()),
                 9000L,
                 userResponse
+        );
+    }
+    public UserProfileResponse getCurrentUser(String email) {
+
+        AuthUsers user = usersrepo.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"));
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getRole_id().getName(),
+                user.getStatus(),
+                user.isPhone_verified(),
+                user.isEmail_verified(),
+                user.getCreated_at()
         );
     }
 
