@@ -28,3 +28,5 @@ public class AuthRole {
     private Timestamp created_at;
 
 }
+
+

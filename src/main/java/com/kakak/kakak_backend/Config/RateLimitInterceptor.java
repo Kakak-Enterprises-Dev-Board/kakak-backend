@@ -31,7 +31,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // Allow send-otp without rate limiting
+        boolean allowed = true;
+
         if (uri.contains("/send-otp")) {
             return true;
         }
