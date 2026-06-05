@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -38,6 +39,7 @@ public class JwtUtil {
     private String generateToken(String email, String tokenType, long expirationMs) {
         return Jwts
                 .builder()
+                .setId(UUID.randomUUID().toString()) // Unique per token
                 .setSubject(email)
                 .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .setIssuedAt(new Date())

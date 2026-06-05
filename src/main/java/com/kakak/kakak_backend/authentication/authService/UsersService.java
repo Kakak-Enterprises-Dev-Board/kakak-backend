@@ -1,5 +1,4 @@
 package com.kakak.kakak_backend.authentication.authService;
-
 import com.kakak.kakak_backend.Config.JwtUtil;
 import com.kakak.kakak_backend.authentication.authDTO.*;
 import com.kakak.kakak_backend.authentication.authEntity.*;
@@ -42,26 +41,25 @@ public class UsersService implements UserDetailsService {
         private final SessionRepo sessionRepo;
         private final TrustedDeviceRepo trustedDeviceRepo;
         public Map<String, String> registeruser(AuthUsers user) {
-            if (user.getUsername() == null || user.getUsername().isBlank()) {
+            if (user.getUsername().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
             }
-            
+
             // Apply per-user rate limit for registration
             String email = user.getEmail();
             if (!rateLimitService.isEmailAllowed(email, "register", REGISTER_LIMIT, 1)) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Registration rate limit exceeded for this email. Please try again later.");
             }
-            
-            return usersrepo.findByEmail(user.getEmail())
-                    .map(existingUser -> {
-                        // Username cannot be changed - it remains the same as registered
-                        if (!existingUser.getUsername().equals(user.getUsername())) {
-                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be changed. Use your original registered username.");
-                        }
-                        return tokensForExistingUser(existingUser, user.getPassword_hash());
-                    })
-                    .orElseGet(() -> registerNewUser(user));
-        }
+
+            if (usersrepo.findByEmail(user.getEmail()).isPresent()) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Email already registered");
+            }
+
+            return registerNewUser(user);
+            }
+
 
         private Map<String, String> registerNewUser(AuthUsers user) {
             AuthRole role = roleRepo.findByName("WORKER")
@@ -72,15 +70,39 @@ public class UsersService implements UserDetailsService {
             }
             user.setPassword_hash(passwordEncoder.encode(user.getPassword_hash()));
             usersrepo.save(user);
-            return createTokenResponse(user.getEmail());
+
+            String refreshToken =
+                    jwtUtil.GenerateRefreshToken(
+                            user.getEmail());
+
+            AuthSession session =
+                    new AuthSession();
+
+            session.setUser(user);
+            session.setRefresh_token(refreshToken);
+
+            session.setDevice_name("Unknown");
+            session.setDevice_os("Unknown");
+
+            session.setIp_address("Unknown");
+            session.setUser_agent("Unknown");
+
+            session.setExpires_at(
+                    new Timestamp(
+                            System.currentTimeMillis()
+                                    + (7L * 24 * 60 * 60 * 1000)));
+            session.setRevoked(false);
+            sessionRepo.save(session);
+            Map<String, String> response =
+                    new HashMap<>();
+            response.put("accessToken", jwtUtil.GenerateToken(user.getEmail()));
+            response.put("refreshToken", refreshToken);
+
+            return response;
+
         }
 
-        private Map<String, String> tokensForExistingUser(AuthUsers existingUser, String rawPassword) {
-            if (!passwordEncoder.matches(rawPassword, existingUser.getPassword())) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
-            }
-            return createTokenResponse(existingUser.getEmail());
-        }
+
 
         public Map<String, String> refreshAccessToken(String refreshToken) {
             if (refreshToken == null || refreshToken.isBlank()) {
@@ -96,6 +118,18 @@ public class UsersService implements UserDetailsService {
                 // Apply per-user rate limit for token refresh
                 if (!rateLimitService.isEmailAllowed(email, "refresh", REFRESH_LIMIT, 1)) {
                     throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Token refresh rate limit exceeded. Please try again later.");
+                }
+                AuthSession session =
+                        sessionRepo.findByRefreshToken(refreshToken)
+                                .orElseThrow(() ->
+                                        new ResponseStatusException(
+                                                HttpStatus.UNAUTHORIZED,
+                                                "Session not found"));
+
+                if (session.isRevoked()) {
+                    throw new ResponseStatusException(
+                            HttpStatus.UNAUTHORIZED,
+                            "Session revoked");
                 }
 
                 usersrepo.findByEmail(email)
@@ -118,8 +152,8 @@ public class UsersService implements UserDetailsService {
             // Check if OTP already exists in Redis - if yes, return the same OTP
             String existingPlainOtp = otpRedisService.getPlainOtp(phone, purpose);
             
-            String otp;
-            String otpHash;
+            //String otp;
+            //String otpHash;
             
             if (existingPlainOtp != null) {
                 // OTP already exists, return the same one (within rate limit window)
@@ -163,7 +197,7 @@ public class UsersService implements UserDetailsService {
             // Check Redis first for faster lookup
             String cachedOtpHash = otpRedisService.getHashedOtp(phone, purpose);
             AuthOtp_logs otpLog;
-            
+
             if (cachedOtpHash != null) {
                 // Found in Redis - verify immediately
                 if (!passwordEncoder.matches(otp, cachedOtpHash)) {
@@ -174,7 +208,7 @@ public class UsersService implements UserDetailsService {
                     });
                     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
                 }
-                
+
                 // OTP is valid, fetch from database to update status
                 otpLog = otpLogsRepo.findLatestUnverifiedOtp(phone, purpose)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP"));
@@ -182,11 +216,11 @@ public class UsersService implements UserDetailsService {
                 // Not in Redis, fetch from database
                 otpLog = otpLogsRepo.findLatestUnverifiedOtp(phone, purpose)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP"));
-                
+
                 if (otpLog.getExpires_at().before(Timestamp.from(Instant.now()))) {
                     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OTP expired");
                 }
-                
+
                 if (!passwordEncoder.matches(otp, otpLog.getOtp_hash())) {
                     otpLog.setAttempts(otpLog.getAttempts() + 1);
                     otpLogsRepo.save(otpLog);
@@ -202,9 +236,8 @@ public class UsersService implements UserDetailsService {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Maximum OTP attempts exceeded");
             }
 
-            // Mark as verified in database
-            otpLog.setVerified(true);
-            otpLogsRepo.save(otpLog);
+            //Delete from database
+            otpLogsRepo.delete(otpLog);
             
             // Delete from Redis
             otpRedisService.deleteOtp(phone, purpose);
@@ -251,6 +284,11 @@ public class UsersService implements UserDetailsService {
                     HttpStatus.UNAUTHORIZED,
                     "Invalid credentials");
         }
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Account is not active");
+        }
 
         user.setLast_login_at(
                 new java.sql.Timestamp(System.currentTimeMillis()));
@@ -270,8 +308,9 @@ public class UsersService implements UserDetailsService {
         session.setUser(user);
         session.setRefresh_token(refreshToken);
 
-        session.setDevice_name("Postman");
-        session.setDevice_os("Windows");
+        session.setDevice_name("Unknown"); //for testing purposes only
+        session.setDevice_os("Unknown");
+
 
         session.setIp_address(ipAddress);
         session.setUser_agent(userAgent);
@@ -287,21 +326,22 @@ public class UsersService implements UserDetailsService {
 
         sessionRepo.save(session);
 
+        String fingerprint =
+                user.getId() + "-" + ipAddress;
+
         TrustedDevice device =
-                new TrustedDevice();
+                trustedDeviceRepo
+                        .findByUserAndDeviceFingerprint(
+                                user,
+                                fingerprint)
+                        .orElseGet(TrustedDevice::new);
 
         device.setUser(user);
-
-        device.setDevice_fingerprint(
-                user.getId() + "-" + ipAddress
-        );
-
-        device.setDevice_name("Postman");
+        device.setDeviceFingerprint(fingerprint);
+        device.setDevice_name("Unknown");
 
         device.setLast_used_at(
-                new java.sql.Timestamp(
-                        System.currentTimeMillis()
-                )
+                new Timestamp(System.currentTimeMillis())
         );
 
         trustedDeviceRepo.save(device);
@@ -348,6 +388,34 @@ public class UsersService implements UserDetailsService {
                 user.getCreated_at()
         );
     }
+    public void logoutAll(String email) {
+
+        AuthUsers user = usersrepo.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found"));
+
+        List<AuthSession> sessions =
+                sessionRepo.findByUser(user);
+
+        sessions.forEach(session ->
+                session.setRevoked(true));
+
+        sessionRepo.saveAll(sessions);
+    }
+    public void logout(String refreshToken) {
+
+        AuthSession session =
+                sessionRepo.findByRefreshToken(refreshToken)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Session not found"));
+
+        session.setRevoked(true);
+
+        sessionRepo.save(session);
+    }
     public List<SessionResponse> getSessions(String email) {
 
         AuthUsers user = usersrepo.findByEmail(email)
@@ -378,7 +446,7 @@ public class UsersService implements UserDetailsService {
                 .stream()
                 .map(device -> new TrustedDeviceResponse(
                         device.getId(),
-                        device.getDevice_fingerprint(),
+                        device.getDeviceFingerprint(),
                         device.getDevice_name(),
                         device.getLast_used_at(),
                         device.getCreated_at()

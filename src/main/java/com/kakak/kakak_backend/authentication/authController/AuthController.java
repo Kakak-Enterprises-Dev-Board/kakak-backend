@@ -58,11 +58,21 @@ public class AuthController {
         );
     }
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(
+            @RequestBody Map<String,String> request) {
+
+        userservice.logout(
+                request.get("refreshToken"));
+
         return ResponseEntity.ok().build();
     }
     @PostMapping("/logout-all")
-    public ResponseEntity<Void> logoutAll() {
+    public ResponseEntity<Void> logoutAll(
+            Authentication authentication) {
+
+        userservice.logoutAll(
+                authentication.getName());
+
         return ResponseEntity.ok().build();
     }
     @GetMapping("/sessions")
