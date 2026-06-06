@@ -1,8 +1,7 @@
-package com.kakak.kakak_backend.Config;
+package com.kakak.kakak_backend.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,14 +38,12 @@ public class JwtUtil {
     private String generateToken(String email, String tokenType, long expirationMs) {
         return Jwts
                 .builder()
-                .setId(UUID.randomUUID().toString()) // Unique per token
-                .setSubject(email)
+                .id(UUID.randomUUID().toString()) // Unique per token
+                .subject(email)
                 .claim(TOKEN_TYPE_CLAIM, tokenType)
-                .setIssuedAt(new Date())
-                .setExpiration(
-                        new Date(System.currentTimeMillis() + expirationMs)
-                )
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSignKey(), Jwts.SIG.HS256)
                 .compact();
     }
 

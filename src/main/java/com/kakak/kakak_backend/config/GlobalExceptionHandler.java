@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.Config;
+package com.kakak.kakak_backend.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,6 +18,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String KEY_TIMESTAMP = "timestamp";
+    private static final String KEY_STATUS = "status";
+    private static final String KEY_ERROR = "error";
+    private static final String KEY_MESSAGE = "message";
+    private static final String KEY_PATH = "path";
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(
             ResponseStatusException ex, HttpServletRequest request) {
@@ -26,11 +32,11 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), ex.getStatusCode(), ex.getReason());
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", ex.getStatusCode().value());
-        body.put("error", ex.getStatusCode().toString());
-        body.put("message", ex.getReason());
-        body.put("path", request.getRequestURI());
+        body.put(KEY_TIMESTAMP, Instant.now().toString());
+        body.put(KEY_STATUS, ex.getStatusCode().value());
+        body.put(KEY_ERROR, ex.getStatusCode().toString());
+        body.put(KEY_MESSAGE, ex.getReason());
+        body.put(KEY_PATH, request.getRequestURI());
 
         return new ResponseEntity<>(body, ex.getStatusCode());
     }
@@ -42,11 +48,11 @@ public class GlobalExceptionHandler {
         log.warn("API FORBIDDEN | Path: {} | Message: {}", request.getRequestURI(), ex.getMessage());
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", HttpStatus.FORBIDDEN.value());
-        body.put("error", "Forbidden");
-        body.put("message", "Access denied: " + ex.getMessage());
-        body.put("path", request.getRequestURI());
+        body.put(KEY_TIMESTAMP, Instant.now().toString());
+        body.put(KEY_STATUS, HttpStatus.FORBIDDEN.value());
+        body.put(KEY_ERROR, "Forbidden");
+        body.put(KEY_MESSAGE, "Access denied: " + ex.getMessage());
+        body.put(KEY_PATH, request.getRequestURI());
 
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
@@ -63,11 +69,11 @@ public class GlobalExceptionHandler {
         log.warn("API VALIDATION FAILED | Path: {} | Errors: {}", request.getRequestURI(), errors);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", "Validation failed: " + errors.toString());
-        body.put("path", request.getRequestURI());
+        body.put(KEY_TIMESTAMP, Instant.now().toString());
+        body.put(KEY_STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(KEY_ERROR, "Bad Request");
+        body.put(KEY_MESSAGE, "Validation failed: " + errors.toString());
+        body.put(KEY_PATH, request.getRequestURI());
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -79,11 +85,11 @@ public class GlobalExceptionHandler {
         log.error("API ERROR | Path: {} | Message: {}", request.getRequestURI(), ex.getMessage(), ex);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", "Internal Server Error");
-        body.put("message", ex.getMessage());
-        body.put("path", request.getRequestURI());
+        body.put(KEY_TIMESTAMP, Instant.now().toString());
+        body.put(KEY_STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(KEY_ERROR, "Internal Server Error");
+        body.put(KEY_MESSAGE, ex.getMessage());
+        body.put(KEY_PATH, request.getRequestURI());
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

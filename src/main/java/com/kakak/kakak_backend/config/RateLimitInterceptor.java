@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.Config;
+package com.kakak.kakak_backend.config;
 
 import com.kakak.kakak_backend.authentication.authService.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
