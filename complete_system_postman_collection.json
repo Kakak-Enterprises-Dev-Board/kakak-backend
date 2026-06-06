@@ -515,6 +515,8 @@
 								"exec": [
 									"pm.test(\"Forgot password OTP sent\", function () {",
 									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"resetOtpCode\", jsonData.otp);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -545,7 +547,7 @@
 								"forgot-password"
 							]
 						},
-						"description": "Triggers a password reset OTP. For security, the OTP is not returned in the HTTP response. Retrieve the generated OTP code from the console/file logs or Redis for the next reset password request."
+						"description": "Triggers a password reset OTP. Saves it as `resetOtpCode`."
 					},
 					"response": []
 				},
