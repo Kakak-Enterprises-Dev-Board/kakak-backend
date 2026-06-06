@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.jobs.jobEntity;
+package com.kakak.kakak_backend.jobs.jobentity;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -270,7 +270,7 @@ public class UsersService implements UserDetailsService {
             }
             return request.get(fieldName).trim();
         }
-
+        
         private Map<String, String> createTokenResponse(String email) {
             Map<String, String> response = new HashMap<>();
             response.put(ACCESS_TOKEN, jwtUtil.GenerateToken(email));

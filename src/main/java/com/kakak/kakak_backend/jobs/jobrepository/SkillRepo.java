@@ -1,6 +1,6 @@
-package com.kakak.kakak_backend.jobs.jobRepository;
+package com.kakak.kakak_backend.jobs.jobrepository;
 
-import com.kakak.kakak_backend.jobs.jobEntity.Skill;
+import com.kakak.kakak_backend.jobs.jobentity.Skill;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

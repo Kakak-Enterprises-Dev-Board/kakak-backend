@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.jobs.jobDTO;
+package com.kakak.kakak_backend.jobs.jobdto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
