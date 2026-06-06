@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.jobs.jobEntity;
+package com.kakak.kakak_backend.jobs.jobentity;
 
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import jakarta.persistence.*;
@@ -7,7 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -51,10 +51,10 @@ public class Job {
     private Integer vacancies;
 
     @Column(name = "shift_start")
-    private Timestamp shiftStart;
+    private Instant shiftStart;
 
     @Column(name = "shift_end")
-    private Timestamp shiftEnd;
+    private Instant shiftEnd;
 
     @Column(name = "location_name")
     private String locationName;
@@ -75,15 +75,15 @@ public class Job {
     private String status; // DRAFT, ACTIVE, CLOSED, EXPIRED
 
     @Column(name = "expires_at")
-    private Timestamp expiresAt;
+    private Instant expiresAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Timestamp createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private Timestamp updatedAt;
+    private Instant updatedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

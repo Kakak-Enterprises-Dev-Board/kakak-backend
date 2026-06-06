@@ -1,9 +1,10 @@
-package com.kakak.kakak_backend.jobs.jobController;
+package com.kakak.kakak_backend.jobs.jobcontroller;
 
-import com.kakak.kakak_backend.jobs.jobDTO.CreateJobRequest;
-import com.kakak.kakak_backend.jobs.jobDTO.JobResponse;
-import com.kakak.kakak_backend.jobs.jobDTO.PublishJobRequest;
-import com.kakak.kakak_backend.jobs.jobService.JobService;
+import com.kakak.kakak_backend.jobs.jobdto.CreateJobRequest;
+import com.kakak.kakak_backend.jobs.jobdto.JobResponse;
+import com.kakak.kakak_backend.jobs.jobdto.PublishJobRequest;
+import com.kakak.kakak_backend.jobs.jobdto.JobSearchRequest;
+import com.kakak.kakak_backend.jobs.jobservice.JobService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,7 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,20 +60,20 @@ public class JobController {
             @RequestParam(required = false) String employmentType,
             @RequestParam(required = false) BigDecimal salaryMin,
             @RequestParam(required = false) BigDecimal salaryMax,
-            @RequestParam(required = false) Timestamp shiftStartAfter,
-            @RequestParam(required = false) Timestamp shiftEndBefore,
+            @RequestParam(required = false) Instant shiftStartAfter,
+            @RequestParam(required = false) Instant shiftEndBefore,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction,
             Authentication authentication) {
-        Page<JobResponse> jobPage = jobService.searchAndFilterJobs(
+        return searchJobs(
                 keyword, city, category, employmentType, salaryMin, salaryMax,
-                shiftStartAfter, shiftEndBefore, status, authentication.getName(),
-                page, size, sortBy, direction
+                shiftStartAfter, shiftEndBefore, status,
+                page, size, sortBy, direction,
+                authentication
         );
-        return ResponseEntity.ok(jobPage.getContent());
     }
 
     @GetMapping("/search")
@@ -83,8 +84,8 @@ public class JobController {
             @RequestParam(required = false) String employmentType,
             @RequestParam(required = false) BigDecimal salaryMin,
             @RequestParam(required = false) BigDecimal salaryMax,
-            @RequestParam(required = false) Timestamp shiftStartAfter,
-            @RequestParam(required = false) Timestamp shiftEndBefore,
+            @RequestParam(required = false) Instant shiftStartAfter,
+            @RequestParam(required = false) Instant shiftEndBefore,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -92,9 +93,11 @@ public class JobController {
             @RequestParam(defaultValue = "DESC") String direction,
             Authentication authentication) {
         Page<JobResponse> jobPage = jobService.searchAndFilterJobs(
-                keyword, city, category, employmentType, salaryMin, salaryMax,
-                shiftStartAfter, shiftEndBefore, status, authentication.getName(),
-                page, size, sortBy, direction
+                new JobSearchRequest(
+                        keyword, city, category, employmentType, salaryMin, salaryMax,
+                        shiftStartAfter, shiftEndBefore, status, authentication.getName(),
+                        page, size, sortBy, direction
+                )
         );
         return ResponseEntity.ok(jobPage.getContent());
     }

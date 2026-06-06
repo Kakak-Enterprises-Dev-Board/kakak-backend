@@ -1,11 +1,11 @@
-package com.kakak.kakak_backend.jobs.jobEntity;
+package com.kakak.kakak_backend.jobs.jobentity;
 
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,7 +31,7 @@ public class JobDraft {
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private Timestamp updatedAt;
+    private Instant updatedAt;
 
     @Override
     public boolean equals(Object o) {

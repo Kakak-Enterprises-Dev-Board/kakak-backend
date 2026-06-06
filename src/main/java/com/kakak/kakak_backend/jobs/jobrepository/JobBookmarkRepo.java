@@ -1,8 +1,8 @@
-package com.kakak.kakak_backend.jobs.jobRepository;
+package com.kakak.kakak_backend.jobs.jobrepository;
 
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
-import com.kakak.kakak_backend.jobs.jobEntity.Job;
-import com.kakak.kakak_backend.jobs.jobEntity.JobBookmark;
+import com.kakak.kakak_backend.jobs.jobentity.Job;
+import com.kakak.kakak_backend.jobs.jobentity.JobBookmark;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

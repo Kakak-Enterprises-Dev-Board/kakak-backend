@@ -1,11 +1,11 @@
-package com.kakak.kakak_backend.jobs.jobEntity;
+package com.kakak.kakak_backend.jobs.jobentity;
 
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,7 +32,7 @@ public class JobBookmark {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Timestamp createdAt;
+    private Instant createdAt;
 
     @Override
     public boolean equals(Object o) {
