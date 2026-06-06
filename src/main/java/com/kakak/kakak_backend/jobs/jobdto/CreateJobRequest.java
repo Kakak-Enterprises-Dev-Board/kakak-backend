@@ -1,10 +1,10 @@
-package com.kakak.kakak_backend.jobs.jobDTO;
+package com.kakak.kakak_backend.jobs.jobdto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -43,9 +43,9 @@ public class CreateJobRequest {
     @Min(value = 1, message = "Vacancies must be at least 1")
     private Integer vacancies;
 
-    private Timestamp startDate;
+    private Instant startDate;
 
-    private Timestamp endDate;
+    private Instant endDate;
 
     private BigDecimal latitude;
 

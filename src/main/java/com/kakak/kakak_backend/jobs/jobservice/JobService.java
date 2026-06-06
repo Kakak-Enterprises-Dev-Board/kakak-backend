@@ -1,20 +1,21 @@
-package com.kakak.kakak_backend.jobs.jobService;
+package com.kakak.kakak_backend.jobs.jobservice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import com.kakak.kakak_backend.authentication.authRepository.UsersRepo;
-import com.kakak.kakak_backend.jobs.jobDTO.CreateJobRequest;
-import com.kakak.kakak_backend.jobs.jobDTO.JobResponse;
-import com.kakak.kakak_backend.jobs.jobEntity.Job;
-import com.kakak.kakak_backend.jobs.jobEntity.JobBookmark;
-import com.kakak.kakak_backend.jobs.jobEntity.JobDraft;
-import com.kakak.kakak_backend.jobs.jobEntity.Skill;
-import com.kakak.kakak_backend.jobs.jobRepository.JobBookmarkRepo;
-import com.kakak.kakak_backend.jobs.jobRepository.JobDraftRepo;
-import com.kakak.kakak_backend.jobs.jobRepository.JobRepo;
-import com.kakak.kakak_backend.jobs.jobRepository.SkillRepo;
-import com.kakak.kakak_backend.jobs.jobSpecification.JobSpecification;
+import com.kakak.kakak_backend.jobs.jobdto.CreateJobRequest;
+import com.kakak.kakak_backend.jobs.jobdto.JobResponse;
+import com.kakak.kakak_backend.jobs.jobdto.JobSearchRequest;
+import com.kakak.kakak_backend.jobs.jobentity.Job;
+import com.kakak.kakak_backend.jobs.jobentity.JobBookmark;
+import com.kakak.kakak_backend.jobs.jobentity.JobDraft;
+import com.kakak.kakak_backend.jobs.jobentity.Skill;
+import com.kakak.kakak_backend.jobs.jobrepository.JobBookmarkRepo;
+import com.kakak.kakak_backend.jobs.jobrepository.JobDraftRepo;
+import com.kakak.kakak_backend.jobs.jobrepository.JobRepo;
+import com.kakak.kakak_backend.jobs.jobrepository.SkillRepo;
+import com.kakak.kakak_backend.jobs.jobspecification.JobSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,13 +29,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class JobService {
+
+    private static final String ROLE_WORKER = "WORKER";
+    private static final String JOB_NOT_FOUND_MSG = "Job not found";
+    private static final String KEY_MESSAGE = "message";
+    private static final String STATUS_ACTIVE = "ACTIVE";
 
     private final JobRepo jobRepo;
     private final SkillRepo skillRepo;
@@ -64,7 +69,7 @@ public class JobService {
                 .longitude(request.getLongitude())
                 .radiusMeters(request.getRadiusMeters())
                 .genderPreference(request.getGenderPreference())
-                .status("ACTIVE")
+                .status(STATUS_ACTIVE)
                 .requiredSkills(resolveSkills(request.getRequiredSkills()))
                 .build();
 
@@ -86,7 +91,7 @@ public class JobService {
 
             JobDraft savedDraft = jobDraftRepo.save(draft);
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Job draft saved successfully");
+            response.put(KEY_MESSAGE, "Job draft saved successfully");
             response.put("draftId", savedDraft.getId());
             return response;
         } catch (JsonProcessingException e) {
@@ -125,7 +130,7 @@ public class JobService {
                     .longitude(request.getLongitude())
                     .radiusMeters(request.getRadiusMeters())
                     .genderPreference(request.getGenderPreference())
-                    .status("ACTIVE")
+                    .status(STATUS_ACTIVE)
                     .requiredSkills(resolveSkills(request.getRequiredSkills()))
                     .build();
 
@@ -143,10 +148,10 @@ public class JobService {
     public JobResponse getJobById(UUID id, String userEmail) {
         AuthUsers user = getUserByEmail(userEmail);
         Job job = jobRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG));
 
-        if ("WORKER".equalsIgnoreCase(user.getRole_id().getName()) && !"ACTIVE".equalsIgnoreCase(job.getStatus())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found");
+        if (ROLE_WORKER.equalsIgnoreCase(user.getRole_id().getName()) && !STATUS_ACTIVE.equalsIgnoreCase(job.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG);
         }
 
         return mapToJobResponse(job);
@@ -158,7 +163,7 @@ public class JobService {
         validateEmployerOrAdmin(employer);
 
         Job job = jobRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG));
 
         validateOwnership(job.getEmployer().getId(), employer);
 
@@ -192,14 +197,14 @@ public class JobService {
         validateEmployerOrAdmin(employer);
 
         Job job = jobRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG));
 
         validateOwnership(job.getEmployer().getId(), employer);
 
         jobRepo.delete(job);
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Job deleted successfully");
+        response.put(KEY_MESSAGE, "Job deleted successfully");
         return response;
     }
 
@@ -209,12 +214,12 @@ public class JobService {
         validateEmployerOrAdmin(employer);
 
         Job job = jobRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG));
 
         validateOwnership(job.getEmployer().getId(), employer);
 
         String upperStatus = newStatus.toUpperCase();
-        if (!Arrays.asList("DRAFT", "ACTIVE", "CLOSED", "EXPIRED").contains(upperStatus)) {
+        if (!Arrays.asList("DRAFT", STATUS_ACTIVE, "CLOSED", "EXPIRED").contains(upperStatus)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status transition");
         }
 
@@ -224,45 +229,32 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public Page<JobResponse> searchAndFilterJobs(
-            String keyword,
-            String city,
-            String category,
-            String employmentType,
-            BigDecimal salaryMin,
-            BigDecimal salaryMax,
-            Timestamp shiftStartAfter,
-            Timestamp shiftEndBefore,
-            String status,
-            String userEmail,
-            int page,
-            int size,
-            String sortBy,
-            String direction
-    ) {
-        AuthUsers user = getUserByEmail(userEmail);
-        String enforcedStatus = status;
+    public Page<JobResponse> searchAndFilterJobs(JobSearchRequest searchRequest) {
+        AuthUsers user = getUserByEmail(searchRequest.userEmail());
+        String enforcedStatus = searchRequest.status();
 
-        if ("WORKER".equalsIgnoreCase(user.getRole_id().getName())) {
-            enforcedStatus = "ACTIVE"; // Workers are strictly forbidden from seeing non-active jobs
+        if (ROLE_WORKER.equalsIgnoreCase(user.getRole_id().getName())) {
+            enforcedStatus = STATUS_ACTIVE; // Workers are strictly forbidden from seeing non-active jobs
         }
 
-        Sort.Direction sortDirection = Sort.Direction.fromString(direction);
-        String mappedSortKey = mapSortKey(sortBy);
+        Sort.Direction sortDirection = Sort.Direction.fromString(searchRequest.direction());
+        String mappedSortKey = mapSortKey(searchRequest.sortBy());
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, mappedSortKey));
+        Pageable pageable = PageRequest.of(searchRequest.page(), searchRequest.size(), Sort.by(sortDirection, mappedSortKey));
 
         Specification<Job> spec = JobSpecification.filterJobs(
-                keyword,
-                city,
-                category,
-                employmentType,
-                salaryMin,
-                salaryMax,
-                shiftStartAfter,
-                shiftEndBefore,
-                enforcedStatus,
-                null
+                new JobSpecification.FilterParams(
+                        searchRequest.keyword(),
+                        searchRequest.city(),
+                        searchRequest.category(),
+                        searchRequest.employmentType(),
+                        searchRequest.salaryMin(),
+                        searchRequest.salaryMax(),
+                        searchRequest.shiftStartAfter(),
+                        searchRequest.shiftEndBefore(),
+                        enforcedStatus,
+                        null
+                )
         );
 
         Page<Job> jobPage = jobRepo.findAll(spec, pageable);
@@ -272,14 +264,14 @@ public class JobService {
     @Transactional
     public Map<String, String> bookmarkJob(UUID jobId, String workerEmail) {
         AuthUsers worker = getUserByEmail(workerEmail);
-        if (!"WORKER".equalsIgnoreCase(worker.getRole_id().getName())) {
+        if (!ROLE_WORKER.equalsIgnoreCase(worker.getRole_id().getName())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only workers can bookmark jobs");
         }
 
         Job job = jobRepo.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, JOB_NOT_FOUND_MSG));
 
-        if (!"ACTIVE".equalsIgnoreCase(job.getStatus())) {
+        if (!STATUS_ACTIVE.equalsIgnoreCase(job.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot bookmark an inactive job");
         }
 
@@ -288,7 +280,7 @@ public class JobService {
 
         if (existingBookmark.isPresent()) {
             jobBookmarkRepo.delete(existingBookmark.get());
-            response.put("message", "Job bookmark removed successfully");
+            response.put(KEY_MESSAGE, "Job bookmark removed successfully");
             response.put("bookmarked", "false");
         } else {
             JobBookmark bookmark = JobBookmark.builder()
@@ -296,7 +288,7 @@ public class JobService {
                     .job(job)
                     .build();
             jobBookmarkRepo.save(bookmark);
-            response.put("message", "Job bookmarked successfully");
+            response.put(KEY_MESSAGE, "Job bookmarked successfully");
             response.put("bookmarked", "true");
         }
 
