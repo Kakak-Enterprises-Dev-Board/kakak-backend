@@ -62,13 +62,21 @@ public class UsersService implements UserDetailsService {
 
 
         private Map<String, String> registerNewUser(AuthUsers user) {
-            AuthRole role = roleRepo.findByName("WORKER")
-                    .orElseThrow(() -> new RuntimeException("Role not found"));
+            AuthRole role = null;
+            if (user.getRole_id() != null && user.getRole_id().getName() != null) {
+                String roleName = user.getRole_id().getName().toUpperCase().trim();
+                role = roleRepo.findByName(roleName).orElse(null);
+            }
+            if (role == null) {
+                role = roleRepo.findByName("WORKER")
+                        .orElseThrow(() -> new RuntimeException("Role not found"));
+            }
             user.setRole_id(role);
             if (user.getStatus() == null || user.getStatus().isBlank()) {
                 user.setStatus("ACTIVE");
             }
             user.setPassword_hash(passwordEncoder.encode(user.getPassword_hash()));
+            user.setLast_login_at(new Timestamp(System.currentTimeMillis()));
             usersrepo.save(user);
 
             String refreshToken =
@@ -454,7 +462,7 @@ public class UsersService implements UserDetailsService {
                 .toList();
     }
 
-    public void forgotPassword(ForgotPasswordRequest request) {
+    public Map<String, String> forgotPassword(ForgotPasswordRequest request) {
 
         usersrepo.findByPhone(request.getPhone())
                 .orElseThrow(() ->
@@ -466,7 +474,7 @@ public class UsersService implements UserDetailsService {
         otpRequest.put("phone", request.getPhone());
         otpRequest.put("purpose", "RESET_PASSWORD");
 
-        sendOtp(otpRequest);
+        return sendOtp(otpRequest);
     }
 
     public void resetPassword(ResetPasswordRequest request) {
