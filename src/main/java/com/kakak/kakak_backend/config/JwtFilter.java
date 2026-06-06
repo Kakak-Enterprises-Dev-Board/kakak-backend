@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.Config;
+package com.kakak.kakak_backend.config;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;

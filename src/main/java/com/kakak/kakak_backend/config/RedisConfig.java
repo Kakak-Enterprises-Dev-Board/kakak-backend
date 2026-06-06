@@ -1,4 +1,4 @@
-package com.kakak.kakak_backend.Config;
+package com.kakak.kakak_backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

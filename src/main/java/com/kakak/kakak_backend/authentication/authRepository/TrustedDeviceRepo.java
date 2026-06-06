@@ -15,5 +15,5 @@ public interface TrustedDeviceRepo
     Optional<TrustedDevice>
     findByUserAndDeviceFingerprint(
             AuthUsers user,
-            String device_fingerprint);
+            String deviceFingerprint);
 }

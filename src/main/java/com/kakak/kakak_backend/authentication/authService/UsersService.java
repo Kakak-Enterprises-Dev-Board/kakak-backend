@@ -1,5 +1,5 @@
 package com.kakak.kakak_backend.authentication.authService;
-import com.kakak.kakak_backend.Config.JwtUtil;
+import com.kakak.kakak_backend.config.JwtUtil;
 import com.kakak.kakak_backend.authentication.authDTO.*;
 import com.kakak.kakak_backend.authentication.authEntity.*;
 import com.kakak.kakak_backend.authentication.authRepository.*;
@@ -29,6 +29,9 @@ public class UsersService implements UserDetailsService {
         private static final int REGISTER_LIMIT = 5; // 5 registrations per minute per email
         private static final int VERIFY_OTP_LIMIT = 5; // 5 OTP verifications per minute per phone
         private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+        private static final String UNKNOWN = "Unknown";
+        private static final String ACCESS_TOKEN = "accessToken";
+        private static final String MESSAGE = "message";
 
         private final JwtUtil jwtUtil;
         private final PasswordEncoder passwordEncoder;
@@ -89,11 +92,11 @@ public class UsersService implements UserDetailsService {
             session.setUser(user);
             session.setRefresh_token(refreshToken);
 
-            session.setDevice_name("Unknown");
-            session.setDevice_os("Unknown");
+            session.setDevice_name(UNKNOWN);
+            session.setDevice_os(UNKNOWN);
 
-            session.setIp_address("Unknown");
-            session.setUser_agent("Unknown");
+            session.setIp_address(UNKNOWN);
+            session.setUser_agent(UNKNOWN);
 
             session.setExpires_at(
                     new Timestamp(
@@ -103,7 +106,7 @@ public class UsersService implements UserDetailsService {
             sessionRepo.save(session);
             Map<String, String> response =
                     new HashMap<>();
-            response.put("accessToken", jwtUtil.GenerateToken(user.getEmail()));
+            response.put(ACCESS_TOKEN, jwtUtil.GenerateToken(user.getEmail()));
             response.put("refreshToken", refreshToken);
 
             return response;
@@ -144,7 +147,7 @@ public class UsersService implements UserDetailsService {
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
 
                 Map<String, String> response = new HashMap<>();
-                response.put("accessToken", jwtUtil.GenerateToken(email));
+                response.put(ACCESS_TOKEN, jwtUtil.GenerateToken(email));
                 return response;
             } catch (JwtException | IllegalArgumentException ex) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
@@ -187,7 +190,7 @@ public class UsersService implements UserDetailsService {
             otpLogsRepo.save(otpLog);
 
             Map<String, String> response = new HashMap<>();
-            response.put("message", "OTP generated");
+            response.put(MESSAGE, "OTP generated");
             response.put("otp", otp);
             return response;
         }
@@ -256,7 +259,7 @@ public class UsersService implements UserDetailsService {
             });
 
             Map<String, String> response = new HashMap<>();
-            response.put("message", "OTP verified");
+            response.put(MESSAGE, "OTP verified");
             response.put("verified", "true");
             return response;
         }
@@ -270,7 +273,7 @@ public class UsersService implements UserDetailsService {
 
         private Map<String, String> createTokenResponse(String email) {
             Map<String, String> response = new HashMap<>();
-            response.put("accessToken", jwtUtil.GenerateToken(email));
+            response.put(ACCESS_TOKEN, jwtUtil.GenerateToken(email));
             response.put("refreshToken", jwtUtil.GenerateRefreshToken(email));
             return response;
         }
@@ -316,8 +319,8 @@ public class UsersService implements UserDetailsService {
         session.setUser(user);
         session.setRefresh_token(refreshToken);
 
-        session.setDevice_name("Unknown"); //for testing purposes only
-        session.setDevice_os("Unknown");
+        session.setDevice_name(UNKNOWN); //for testing purposes only
+        session.setDevice_os(UNKNOWN);
 
 
         session.setIp_address(ipAddress);
@@ -346,7 +349,7 @@ public class UsersService implements UserDetailsService {
 
         device.setUser(user);
         device.setDeviceFingerprint(fingerprint);
-        device.setDevice_name("Unknown");
+        device.setDevice_name(UNKNOWN);
 
         device.setLast_used_at(
                 new Timestamp(System.currentTimeMillis())
@@ -477,7 +480,7 @@ public class UsersService implements UserDetailsService {
         sendOtp(otpRequest); // Generates OTP in Redis/DB without returning it
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Reset OTP sent successfully");
+        response.put(MESSAGE, "Reset OTP sent successfully");
         return response;
     }
 
