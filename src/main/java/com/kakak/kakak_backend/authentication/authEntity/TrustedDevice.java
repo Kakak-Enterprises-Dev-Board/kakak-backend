@@ -24,7 +24,7 @@ public class TrustedDevice {
     @JoinColumn(name = "user_id")
     private AuthUsers user;
 
-    private String device_fingerprint;
+    private String deviceFingerprint;
 
     private String device_name;
 

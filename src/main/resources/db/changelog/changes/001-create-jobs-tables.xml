@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="20260606-001" author="krishnaprasad">
+        <comment>Create skills table</comment>
+        <createTable tableName="skills" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+
+        <comment>Create jobs table</comment>
+        <createTable tableName="jobs" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="employer_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="VARCHAR(100)"/>
+            <column name="employment_type" type="VARCHAR(50)"/>
+            <column name="salary_type" type="VARCHAR(50)"/>
+            <column name="salary_amount" type="DECIMAL(19, 2)"/>
+            <column name="vacancies" type="INTEGER"/>
+            <column name="shift_start" type="TIMESTAMP"/>
+            <column name="shift_end" type="TIMESTAMP"/>
+            <column name="location_name" type="VARCHAR(255)"/>
+            <column name="latitude" type="DECIMAL(9, 6)"/>
+            <column name="longitude" type="DECIMAL(9, 6)"/>
+            <column name="radius_meters" type="INTEGER"/>
+            <column name="gender_preference" type="VARCHAR(50)"/>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to users table (employer_id)</comment>
+        <addForeignKeyConstraint baseTableName="jobs" baseTableSchemaName="kakak" baseColumnNames="employer_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_jobs_employer" onDelete="RESTRICT"/>
+
+        <comment>Create job_skills table (join table)</comment>
+        <createTable tableName="job_skills" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="job_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="skill_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Keys to job_skills</comment>
+        <addForeignKeyConstraint baseTableName="job_skills" baseTableSchemaName="kakak" baseColumnNames="job_id"
+                                 referencedTableName="jobs" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_job_skills_job" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="job_skills" baseTableSchemaName="kakak" baseColumnNames="skill_id"
+                                 referencedTableName="skills" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_job_skills_skill" onDelete="CASCADE"/>
+
+        <comment>Create job_drafts table</comment>
+        <createTable tableName="job_drafts" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="employer_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="draft_payload" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key to job_drafts</comment>
+        <addForeignKeyConstraint baseTableName="job_drafts" baseTableSchemaName="kakak" baseColumnNames="employer_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_job_drafts_employer" onDelete="CASCADE"/>
+
+        <comment>Create job_bookmarks table</comment>
+        <createTable tableName="job_bookmarks" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="worker_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Keys to job_bookmarks</comment>
+        <addForeignKeyConstraint baseTableName="job_bookmarks" baseTableSchemaName="kakak" baseColumnNames="worker_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_job_bookmarks_worker" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="job_bookmarks" baseTableSchemaName="kakak" baseColumnNames="job_id"
+                                 referencedTableName="jobs" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_job_bookmarks_job" onDelete="CASCADE"/>
+
+        <comment>Create indexes to improve query performance and secure database integrity</comment>
+        <createIndex tableName="jobs" schemaName="kakak" indexName="idx_jobs_employer_id">
+            <column name="employer_id"/>
+        </createIndex>
+        <createIndex tableName="jobs" schemaName="kakak" indexName="idx_jobs_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="jobs" schemaName="kakak" indexName="idx_jobs_location_name">
+            <column name="location_name"/>
+        </createIndex>
+        <createIndex tableName="jobs" schemaName="kakak" indexName="idx_jobs_salary_amount">
+            <column name="salary_amount"/>
+        </createIndex>
+        <createIndex tableName="jobs" schemaName="kakak" indexName="idx_jobs_shift_start">
+            <column name="shift_start"/>
+        </createIndex>
+
+        <createIndex tableName="job_skills" schemaName="kakak" indexName="idx_job_skills_job_id">
+            <column name="job_id"/>
+        </createIndex>
+        <createIndex tableName="job_skills" schemaName="kakak" indexName="idx_job_skills_skill_id">
+            <column name="skill_id"/>
+        </createIndex>
+
+        <createIndex tableName="job_drafts" schemaName="kakak" indexName="idx_job_drafts_employer_id">
+            <column name="employer_id"/>
+        </createIndex>
+
+        <createIndex tableName="job_bookmarks" schemaName="kakak" indexName="idx_job_bookmarks_worker_id">
+            <column name="worker_id"/>
+        </createIndex>
+        <createIndex tableName="job_bookmarks" schemaName="kakak" indexName="idx_job_bookmarks_job_id">
+            <column name="job_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

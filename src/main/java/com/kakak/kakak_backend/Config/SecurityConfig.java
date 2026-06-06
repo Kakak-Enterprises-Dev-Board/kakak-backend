@@ -10,13 +10,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -24,7 +24,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/error"
+                                ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess
@@ -37,22 +43,26 @@ public class SecurityConfig {
     @Bean
     CommandLineRunner initRoles(RoleRepo roleRepo) {
         return args -> {
+            java.util.List<AuthRole> allRoles = roleRepo.findAll();
 
-            if (roleRepo.findByName("ADMIN").isEmpty()) {
+            boolean hasAdmin = allRoles.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getName()));
+            if (!hasAdmin) {
                 AuthRole admin = new AuthRole();
                 admin.setName("ADMIN");
                 admin.setDescription("System Administrator");
                 roleRepo.save(admin);
             }
 
-            if (roleRepo.findByName("EMPLOYER").isEmpty()) {
+            boolean hasEmployer = allRoles.stream().anyMatch(r -> "EMPLOYER".equalsIgnoreCase(r.getName()));
+            if (!hasEmployer) {
                 AuthRole employer = new AuthRole();
                 employer.setName("EMPLOYER");
                 employer.setDescription("Employer User");
                 roleRepo.save(employer);
             }
 
-            if (roleRepo.findByName("WORKER").isEmpty()) {
+            boolean hasWorker = allRoles.stream().anyMatch(r -> "WORKER".equalsIgnoreCase(r.getName()));
+            if (!hasWorker) {
                 AuthRole worker = new AuthRole();
                 worker.setName("WORKER");
                 worker.setDescription("Worker User");
@@ -63,10 +73,7 @@ public class SecurityConfig {
 
 
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)

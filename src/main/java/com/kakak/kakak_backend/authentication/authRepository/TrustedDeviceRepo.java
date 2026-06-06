@@ -6,9 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 public interface TrustedDeviceRepo
         extends JpaRepository<TrustedDevice, UUID> {
 
     List<TrustedDevice> findByUser(AuthUsers user);
+    Optional<TrustedDevice>
+    findByUserAndDeviceFingerprint(
+            AuthUsers user,
+            String device_fingerprint);
 }
