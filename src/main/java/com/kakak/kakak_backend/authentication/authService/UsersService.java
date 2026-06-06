@@ -474,7 +474,11 @@ public class UsersService implements UserDetailsService {
         otpRequest.put("phone", request.getPhone());
         otpRequest.put("purpose", "RESET_PASSWORD");
 
-        return sendOtp(otpRequest);
+        sendOtp(otpRequest); // Generates OTP in Redis/DB without returning it
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Reset OTP sent successfully");
+        return response;
     }
 
     public void resetPassword(ResetPasswordRequest request) {
