@@ -2,7 +2,7 @@ package com.kakak.kakak_backend.application.applicationDTO;
 
 import lombok.Data;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -14,5 +14,5 @@ public class JobHistoryResponse {
 
     private String status;
 
-    private Timestamp completedAt;
+    private Instant completedAt;
 }
