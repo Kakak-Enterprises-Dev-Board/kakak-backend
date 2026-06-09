@@ -9,4 +9,7 @@ import java.util.UUID;
 
 @Repository
 public interface JobRepo extends JpaRepository<Job, UUID>, JpaSpecificationExecutor<Job> {
+    long countByEmployer_Id(UUID employerId);
+
+    long countByEmployer_IdAndStatus(UUID employerId, String status);
 }

@@ -1,10 +1,6 @@
 package com.kakak.kakak_backend.Employer.EmployerController;
 
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerAddressRequest;
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerDocumentRequest;
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerProfileResponse;
-import com.kakak.kakak_backend.Employer.EmployerDTO.PublicEmployerResponse;
-import com.kakak.kakak_backend.Employer.EmployerDTO.UpdateEmployerProfileRequest;
+import com.kakak.kakak_backend.Employer.EmployerDTO.*;
 import com.kakak.kakak_backend.Employer.EmployerService.EmployerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +22,23 @@ import java.util.UUID;
 public class EmployerController {
 
     private final EmployerService employerService;
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<EmployerDashboardResponse> getEmployerDashboard(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                employerService.getEmployerDashboard(authentication)
+        );
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<EmployerProfileResponse> getEmployerProfile(
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                employerService.getEmployerProfile(authentication)
+        );
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<PublicEmployerResponse> getEmployer(@PathVariable UUID id) {

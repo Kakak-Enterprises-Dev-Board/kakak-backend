@@ -7,10 +7,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface EmployerDocumentRepository extends JpaRepository<Employer_Documents, UUID> {
     @Query("select d from Employer_Documents d where d.employer_id.id = :employerId")
     List<Employer_Documents> findByEmployerId(@Param("employerId") UUID employerId);
+    Optional<Employer_Documents>
+    findTopByEmployer_id_IdOrderByUploaded_atDesc(UUID employerId);
 }

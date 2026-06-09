@@ -1,10 +1,6 @@
 package com.kakak.kakak_backend.Employer.EmployerService;
 
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerAddressRequest;
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerDocumentRequest;
-import com.kakak.kakak_backend.Employer.EmployerDTO.EmployerProfileResponse;
-import com.kakak.kakak_backend.Employer.EmployerDTO.PublicEmployerResponse;
-import com.kakak.kakak_backend.Employer.EmployerDTO.UpdateEmployerProfileRequest;
+import com.kakak.kakak_backend.Employer.EmployerDTO.*;
 import com.kakak.kakak_backend.Employer.EmployerEntity.Employer;
 import com.kakak.kakak_backend.Employer.EmployerEntity.Employer_Addresses;
 import com.kakak.kakak_backend.Employer.EmployerEntity.Employer_Documents;
@@ -17,6 +13,7 @@ import com.kakak.kakak_backend.Files.fileEntity.files;
 import com.kakak.kakak_backend.Files.fileService.FileStorageService;
 import com.kakak.kakak_backend.authentication.authEntity.AuthUsers;
 import com.kakak.kakak_backend.authentication.authRepository.UsersRepo;
+import com.kakak.kakak_backend.jobs.jobrepository.JobRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -30,12 +27,54 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class EmployerService {
-
+    private final JobRepo jobRepo;
     private final EmployerRepository employerRepository;
     private final EmployerAddressRepository employerAddressRepository;
     private final EmployerDocumentRepository employerDocumentRepository;
     private final UsersRepo usersRepo;
     private final FileStorageService fileStorageService;
+
+    @Transactional(readOnly = true)
+    public EmployerDashboardResponse getEmployerDashboard(
+            Authentication authentication) {
+
+        // existing code here
+
+        AuthUsers user = currentEmployer(authentication).getUser_id();
+
+        long totalJobs =
+                jobRepo.countByEmployer_Id(user.getId());
+
+        long activeJobs =
+                jobRepo.countByEmployer_IdAndStatus(
+                        user.getId(),
+                        "ACTIVE"
+                );
+
+        return new EmployerDashboardResponse(
+                (int) totalJobs,
+                (int) activeJobs,
+                0,
+                0
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public EmployerProfileResponse getEmployerProfile(Authentication authentication) {
+
+        Employer employer = currentEmployer(authentication);
+
+        Employer_Addresses address =
+                employerAddressRepository.findByEmployerId(employer.getId())
+                        .orElse(null);
+
+        Employer_Documents document =
+                employerDocumentRepository.findTopByEmployer_id_IdOrderByUploaded_atDesc(
+                        employer.getId()
+                ).orElse(null);
+
+        return toProfileResponse(employer, address, document);
+    }
 
     @Transactional(readOnly = true)
     public PublicEmployerResponse getPublicEmployer(UUID id) {
