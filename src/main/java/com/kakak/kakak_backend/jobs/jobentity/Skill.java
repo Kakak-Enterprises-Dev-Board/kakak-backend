@@ -5,7 +5,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "skills")
+@Table(name = "skills", schema = "kakak")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

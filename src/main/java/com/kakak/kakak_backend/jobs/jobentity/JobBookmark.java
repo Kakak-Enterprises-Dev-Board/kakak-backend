@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "job_bookmarks")
+@Table(name = "job_bookmarks", schema = "kakak")
 @Getter
 @Setter
 @NoArgsConstructor
