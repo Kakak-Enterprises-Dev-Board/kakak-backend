@@ -3,6 +3,7 @@ import com.kakak.kakak_backend.Config.JwtUtil;
 import com.kakak.kakak_backend.authentication.authDTO.*;
 import com.kakak.kakak_backend.authentication.authEntity.*;
 import com.kakak.kakak_backend.authentication.authRepository.*;
+import com.kakak.kakak_backend.authentication.authEnum.UserRole;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import com.kakak.kakak_backend.Employer.EmployerEntity.Employer;
+import com.kakak.kakak_backend.Employer.EmployerEnum.VerificationStatus;
+import com.kakak.kakak_backend.Employer.EmployerRepository.EmployerRepository;
 
 import java.security.SecureRandom;
 import java.sql.Timestamp;
@@ -40,35 +44,63 @@ public class UsersService implements UserDetailsService {
 
         private final SessionRepo sessionRepo;
         private final TrustedDeviceRepo trustedDeviceRepo;
-        public Map<String, String> registeruser(AuthUsers user) {
-            if (user.getUsername().isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
+        private final EmployerRepository employerRepository;
+        public Map<String, String> registeruser(RegisterRequest request) {
+            if (request.getUsername() == null || request.getUsername().isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Username is required");
+            }
+
+            if (request.getRole() == null || request.getRole().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
+            }
+
+            UserRole roleEnum;
+            try {
+                roleEnum = UserRole.valueOf(request.getRole().toUpperCase().trim());
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role");
+            }
+
+            if (roleEnum == UserRole.ADMIN) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ADMIN role cannot be self-registered");
             }
 
             // Apply per-user rate limit for registration
-            String email = user.getEmail();
+            String email = request.getEmail();
             if (!rateLimitService.isEmailAllowed(email, "register", REGISTER_LIMIT, 1)) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Registration rate limit exceeded for this email. Please try again later.");
             }
 
-            if (usersrepo.findByEmail(user.getEmail()).isPresent()) {
+            if (usersrepo.findByEmail(request.getEmail()).isPresent()) {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "Email already registered");
             }
 
-            return registerNewUser(user);
+            return registerNewUser(request);
             }
 
 
-        private Map<String, String> registerNewUser(AuthUsers user) {
-            AuthRole role = roleRepo.findByName("WORKER")
+            private Map<String, String> registerNewUser(RegisterRequest request) {
+            AuthUsers user = new AuthUsers();
+            user.setUsername(request.getUsername());
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setPhone(request.getPhone());
+            user.setEmail(request.getEmail());
+            String roleName = request.getRole().toUpperCase().trim();
+            AuthRole role = roleRepo.findByName(roleName)
                     .orElseThrow(() -> new RuntimeException("Role not found"));
             user.setRole_id(role);
-            if (user.getStatus() == null || user.getStatus().isBlank()) {
-                user.setStatus("ACTIVE");
-            }
-            user.setPassword_hash(passwordEncoder.encode(user.getPassword_hash()));
+            user.setStatus("ACTIVE");
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Passwords do not match");
+                }
+            user.setPassword_hash(passwordEncoder.encode(request.getPassword()));
             usersrepo.save(user);
 
             String refreshToken =
@@ -134,6 +166,10 @@ public class UsersService implements UserDetailsService {
 
                 usersrepo.findByEmail(email)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+                // TODO: Future Employer Verification check
+                // Check if user role is EMPLOYER and check their Employer verification status.
+                // If PENDING or REJECTED, token refresh must be denied.
 
                 Map<String, String> response = new HashMap<>();
                 response.put("accessToken", jwtUtil.GenerateToken(email));
@@ -289,6 +325,8 @@ public class UsersService implements UserDetailsService {
                     HttpStatus.FORBIDDEN,
                     "Account is not active");
         }
+
+
 
         user.setLast_login_at(
                 new java.sql.Timestamp(System.currentTimeMillis()));

@@ -69,6 +69,7 @@ public class AuthUsers implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role_id.getName()));
     }
 
+
     @Override
     public String getPassword() { return password_hash; }
 
@@ -86,4 +87,5 @@ public class AuthUsers implements UserDetails {
 
     @Override
     public boolean isEnabled() { return true; }
+
 }

@@ -19,7 +19,7 @@ public class AuthController {
     private final UsersService userservice;
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String,String>> register(@RequestBody AuthUsers register ) {
+    public ResponseEntity<Map<String,String>> register(@RequestBody RegisterRequest register ) {
         return ResponseEntity.ok(userservice.registeruser(register));
     }
 
