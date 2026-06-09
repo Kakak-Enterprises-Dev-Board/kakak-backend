@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "jobs", schema = "kakak")
+@Table(name = "jobs")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -88,7 +88,6 @@ public class Job {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_skills",
-            schema = "kakak",
             joinColumns = @JoinColumn(name = "job_id"),
             inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
