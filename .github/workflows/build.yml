@@ -43,5 +43,5 @@ jobs:
         run: |
           mvn -B clean package -DskipTests \
             org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=Kakak-Enterprises-Dev-Board_kakak-backend_1036e738-b023-42a4-a097-d20f6f6d120c \
+            -Dsonar.projectKey=Kakak-Enterprises-Dev-Board_kakak-backend_aa62c8c0-5169-44a8-80ab-67f6d7dfb943 \
             -Dsonar.projectName=kakak-backend
