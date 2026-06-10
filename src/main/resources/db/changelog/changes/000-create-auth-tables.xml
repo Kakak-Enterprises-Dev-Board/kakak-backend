@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="20260610-001" author="rohan">
+        <comment>Create roles table</comment>
+        <createTable tableName="roles" schemaName="kakak">
+            <column name="role_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Create users table</comment>
+        <createTable tableName="users" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="first_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="profile_image_url" type="VARCHAR(255)"/>
+            <column name="experience" type="TEXT"/>
+            <column name="skills" type="TEXT"/>
+            <column name="average_rating" type="DOUBLE"/>
+            <column name="password_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone_verified" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email_verified" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_login_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to roles table</comment>
+        <addForeignKeyConstraint baseTableName="users" baseTableSchemaName="kakak" baseColumnNames="role_id"
+                                 referencedTableName="roles" referencedTableSchemaName="kakak" referencedColumnNames="role_id"
+                                 constraintName="fk_users_role" onDelete="RESTRICT"/>
+
+        <comment>Create otp_logs table</comment>
+        <createTable tableName="otp_logs" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="otp_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purpose" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="verified" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Create sessions table</comment>
+        <createTable tableName="sessions" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID"/>
+            <column name="refresh_token" type="VARCHAR(255)"/>
+            <column name="device_name" type="VARCHAR(255)"/>
+            <column name="device_os" type="VARCHAR(255)"/>
+            <column name="ip_address" type="VARCHAR(255)"/>
+            <column name="user_agent" type="VARCHAR(1000)"/>
+            <column name="expires_at" type="TIMESTAMP"/>
+            <column name="revoked" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to users table (sessions)</comment>
+        <addForeignKeyConstraint baseTableName="sessions" baseTableSchemaName="kakak" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_sessions_user" onDelete="CASCADE"/>
+
+        <comment>Create trusted_devices table</comment>
+        <createTable tableName="trusted_devices" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID"/>
+            <column name="device_fingerprint" type="VARCHAR(255)"/>
+            <column name="device_name" type="VARCHAR(255)"/>
+            <column name="last_used_at" type="TIMESTAMP"/>
+            <column name="created_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to users table (trusted_devices)</comment>
+        <addForeignKeyConstraint baseTableName="trusted_devices" baseTableSchemaName="kakak" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_trusted_devices_user" onDelete="CASCADE"/>
+
+        <comment>Create indexes for auth tables</comment>
+        <createIndex tableName="users" schemaName="kakak" indexName="idx_users_email">
+            <column name="email"/>
+        </createIndex>
+        <createIndex tableName="users" schemaName="kakak" indexName="idx_users_phone">
+            <column name="phone"/>
+        </createIndex>
+        <createIndex tableName="sessions" schemaName="kakak" indexName="idx_sessions_refresh_token">
+            <column name="refresh_token"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

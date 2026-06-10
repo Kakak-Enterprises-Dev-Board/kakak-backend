@@ -5,6 +5,8 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
 
+    <include file="db/changelog/changes/000-create-auth-tables.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/001-create-jobs-tables.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/002-create-employer-files-applications-reviews-user-skills.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
