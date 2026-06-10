@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface EmployerDocumentRepository extends JpaRepository<Employer_Documents, UUID> {
     @Query("select d from Employer_Documents d where d.employer_id.id = :employerId")
     List<Employer_Documents> findByEmployerId(@Param("employerId") UUID employerId);
+    @Query("select d from Employer_Documents d where d.employer_id.id = :employerId order by d.uploaded_at desc limit 1")
     Optional<Employer_Documents>
-    findTopByEmployer_id_IdOrderByUploaded_atDesc(UUID employerId);
+    findTopByEmployer_id_IdOrderByUploaded_atDesc(@Param("employerId") UUID employerId);
 }
