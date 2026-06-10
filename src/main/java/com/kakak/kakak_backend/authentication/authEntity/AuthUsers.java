@@ -39,6 +39,18 @@ public class AuthUsers implements UserDetails {
     @Column(nullable = false)
     private String lastName;
 
+    @Column
+    private String profileImageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String experience;
+
+    @Column(columnDefinition = "TEXT")
+    private String skills;
+
+    @Column
+    private Double averageRating;
+
     @Column(nullable = false)
     private String password_hash;
 
@@ -63,11 +75,14 @@ public class AuthUsers implements UserDetails {
     @Column(nullable = false)
     private Timestamp created_at;
 
+    @UpdateTimestamp
+    private Timestamp updated_at;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role_id.getName()));
     }
+
 
     @Override
     public String getPassword() { return password_hash; }
@@ -86,4 +101,5 @@ public class AuthUsers implements UserDetails {
 
     @Override
     public boolean isEnabled() { return true; }
+
 }

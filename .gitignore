@@ -32,4 +32,14 @@ build/
 ### VS Code ###
 .vscode/
 
+src/main/resources/application.properties
+
 .DS_Store
+uploads/
+
+
+logs/
+logs/application.log
+logs/archived/
+logs/archived/application-2026-06-08.0.log
+application-2026-06-08.0.log
