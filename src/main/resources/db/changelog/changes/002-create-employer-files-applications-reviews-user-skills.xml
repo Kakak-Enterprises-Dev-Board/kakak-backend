@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="20260610-002" author="rohan">
+        <comment>Create files table</comment>
+        <createTable tableName="files" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uploaded_by_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bucket_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_key" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mime_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_size" type="NUMERIC(38,0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_url" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="module" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uploaded_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to files (uploaded_by_id)</comment>
+        <addForeignKeyConstraint baseTableName="files" baseTableSchemaName="kakak" baseColumnNames="uploaded_by_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_files_uploaded_by" onDelete="RESTRICT"/>
+
+        <comment>Create employer table</comment>
+        <createTable tableName="employer" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_description" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_size" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_website" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="industry" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registration_number" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="verification_status" type="VARCHAR(255)"/>
+            <column name="user_id_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to employer (user_id_id)</comment>
+        <addForeignKeyConstraint baseTableName="employer" baseTableSchemaName="kakak" baseColumnNames="user_id_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_employer_user" onDelete="RESTRICT"/>
+
+        <comment>Create employer_addresses table</comment>
+        <createTable tableName="employer_addresses" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="address_line_1" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="address_line_2" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="latitude" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="longitude" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pincode" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="employer_id_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to employer_addresses (employer_id_id)</comment>
+        <addForeignKeyConstraint baseTableName="employer_addresses" baseTableSchemaName="kakak" baseColumnNames="employer_id_id"
+                                 referencedTableName="employer" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_employer_addresses_employer" onDelete="CASCADE"/>
+
+        <comment>Create employer_documents table</comment>
+        <createTable tableName="employer_documents" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="document_type" type="VARCHAR(255)"/>
+            <column name="uploaded_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="verification_status" type="VARCHAR(255)"/>
+            <column name="employer_id_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_id_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraints to employer_documents</comment>
+        <addForeignKeyConstraint baseTableName="employer_documents" baseTableSchemaName="kakak" baseColumnNames="employer_id_id"
+                                 referencedTableName="employer" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_employer_documents_employer" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="employer_documents" baseTableSchemaName="kakak" baseColumnNames="file_id_id"
+                                 referencedTableName="files" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_employer_documents_file" onDelete="CASCADE"/>
+
+        <comment>Create applications table</comment>
+        <createTable tableName="applications" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="completed_at" type="TIMESTAMP"/>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="job_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="worker_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraints to applications</comment>
+        <addForeignKeyConstraint baseTableName="applications" baseTableSchemaName="kakak" baseColumnNames="job_id"
+                                 referencedTableName="jobs" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_applications_job" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="applications" baseTableSchemaName="kakak" baseColumnNames="worker_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_applications_worker" onDelete="CASCADE"/>
+
+        <comment>Create reviews table</comment>
+        <createTable tableName="reviews" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="rating" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="review_text" type="TEXT"/>
+            <column name="job_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reviewer_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target_user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraints to reviews</comment>
+        <addForeignKeyConstraint baseTableName="reviews" baseTableSchemaName="kakak" baseColumnNames="job_id"
+                                 referencedTableName="jobs" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_reviews_job" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="reviews" baseTableSchemaName="kakak" baseColumnNames="reviewer_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_reviews_reviewer" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="reviews" baseTableSchemaName="kakak" baseColumnNames="target_user_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_reviews_target_user" onDelete="CASCADE"/>
+
+        <comment>Create user_skills table</comment>
+        <createTable tableName="user_skills" schemaName="kakak">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="skill_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <comment>Add Foreign Key Constraint to user_skills (user_id)</comment>
+        <addForeignKeyConstraint baseTableName="user_skills" baseTableSchemaName="kakak" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedTableSchemaName="kakak" referencedColumnNames="id"
+                                 constraintName="fk_user_skills_user" onDelete="CASCADE"/>
+
+        <comment>Create indexes</comment>
+        <createIndex tableName="employer" schemaName="kakak" indexName="idx_employer_user_id">
+            <column name="user_id_id"/>
+        </createIndex>
+        <createIndex tableName="employer_addresses" schemaName="kakak" indexName="idx_employer_addresses_employer_id">
+            <column name="employer_id_id"/>
+        </createIndex>
+        <createIndex tableName="employer_documents" schemaName="kakak" indexName="idx_employer_documents_employer_id">
+            <column name="employer_id_id"/>
+        </createIndex>
+        <createIndex tableName="applications" schemaName="kakak" indexName="idx_applications_job_id">
+            <column name="job_id"/>
+        </createIndex>
+        <createIndex tableName="applications" schemaName="kakak" indexName="idx_applications_worker_id">
+            <column name="worker_id"/>
+        </createIndex>
+        <createIndex tableName="reviews" schemaName="kakak" indexName="idx_reviews_job_id">
+            <column name="job_id"/>
+        </createIndex>
+        <createIndex tableName="reviews" schemaName="kakak" indexName="idx_reviews_target_user_id">
+            <column name="target_user_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
