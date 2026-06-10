@@ -35,6 +35,7 @@ build/
 src/main/resources/application.properties
 
 .DS_Store
+uploads/
 
 
 logs/
